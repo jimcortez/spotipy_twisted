@@ -1,5 +1,7 @@
 # spotipy_twisted - a Python client for The Spotify Web API
 
+[![TravisCI Build Status](https://travis-ci.org/jimcortez/spotipy_twisted.svg?branch=master)](https://travis-ci.org/jimcortez/spotipy_twisted)
+
 ## Description
 
 This is a forked package from https://github.com/plamere/spotipy (Version 2.3.3)
