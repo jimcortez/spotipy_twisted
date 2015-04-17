@@ -1,9 +1,9 @@
 # shows tracks for the given artist
 
 from __future__ import print_function
-import spotipy
+import spotipy_twisted
 import sys
-sp = spotipy.Spotify()
+sp = spotipy_twisted.Spotify()
 
 if len(sys.argv) > 1:
     artist_name = ' '.join(sys.argv[1:])

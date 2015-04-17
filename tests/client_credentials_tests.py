@@ -1,12 +1,14 @@
 # -*- coding: latin-1 -*-
 
-import spotipy
-from  spotipy.oauth2 import SpotifyClientCredentials
-import unittest
+import spotipy_twisted
+from  spotipy_twisted.oauth2 import SpotifyClientCredentials
+from twisted.internet import defer
+from twisted.trial import unittest
 
 '''
     Client Credentials Requests Tests
 '''
+
 
 class ClientCredentialsTestSpotipy(unittest.TestCase):
     '''
@@ -15,13 +17,18 @@ class ClientCredentialsTestSpotipy(unittest.TestCase):
 
     muse_urn = 'spotify:artist:12Chz98pHFMPJEknJQMWvI'
 
+    @defer.inlineCallbacks
     def test_request_with_token(self):
-        artist = spotify.artist(self.muse_urn)
+        artist = yield spotify.artist(self.muse_urn)
         self.assertTrue(artist['name'] == u'Muse')
 
 
 if __name__ == '__main__':
     spotify_cc = SpotifyClientCredentials()
-    spotify = spotipy.Spotify(client_credentials_manager=spotify_cc)
+    spotify = spotipy_twisted.Spotify(client_credentials_manager=spotify_cc)
     spotify.trace = False
-    unittest.main()
+    import sys
+    from twisted.scripts import trial
+
+    sys.argv.extend([__name__])
+    trial.run()

@@ -1,6 +1,6 @@
 # shows artist info for a URN or URL
 
-import spotipy
+import spotipy_twisted
 import sys
 import pprint
 
@@ -9,6 +9,6 @@ if len(sys.argv) > 1:
 else:
     search_str = 'Radiohead'
 
-sp = spotipy.Spotify()
+sp = spotipy_twisted.Spotify()
 result = sp.search(search_str)
 pprint.pprint(result)

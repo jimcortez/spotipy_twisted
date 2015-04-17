@@ -2,8 +2,8 @@
 # Adds tracks to a playlist
 
 import sys
-import spotipy
-import spotipy.util as util
+import spotipy_twisted
+import spotipy_twisted.util as util
 
 scope = 'user-library-read'
 
@@ -16,7 +16,7 @@ else:
 token = util.prompt_for_user_token(username, scope)
 
 if token:
-    sp = spotipy.Spotify(auth=token)
+    sp = spotipy_twisted.Spotify(auth=token)
     results = sp.current_user_saved_tracks()
     for item in results['items']:
         track = item['track']

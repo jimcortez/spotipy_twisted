@@ -1,8 +1,9 @@
 # -*- coding: latin-1 -*-
 
-import spotipy
-from  spotipy import util
-import unittest
+import spotipy_twisted
+from  spotipy_twisted import util
+from twisted.internet import defer
+from twisted.trial import unittest
 import pprint
 import sys
 
@@ -34,28 +35,32 @@ class AuthTestSpotipy(unittest.TestCase):
 
     bad_id = 'BAD_ID'
 
+    @defer.inlineCallbacks
     def test_track_bad_id(self):
         try:
-            track = spotify.track(self.bad_id)
+            track = yield spotify.track(self.bad_id)
             self.assertTrue(False)
-        except spotipy.SpotifyException:
+        except spotipy_twisted.SpotifyException:
             self.assertTrue(True)
 
-
+    @defer.inlineCallbacks
     def test_basic_user_profile(self):
-        user = spotify.user(username)
+        user = yield spotify.user(username)
         self.assertTrue(user['id'] == username)
 
+    @defer.inlineCallbacks
     def test_current_user(self):
-        user = spotify.current_user()
+        user = yield spotify.current_user()
         self.assertTrue(user['id'] == username)
 
+    @defer.inlineCallbacks
     def test_me(self):
-        user = spotify.me()
+        user = yield spotify.me()
         self.assertTrue(user['id'] == username)
 
+    @defer.inlineCallbacks
     def test_user_playlists(self):
-        playlists = spotify.user_playlists(username, limit=5)
+        playlists = yield spotify.user_playlists(username, limit=5)
         self.assertTrue('items' in playlists)
 
         # known API issue currently causes this test to fail
@@ -64,13 +69,14 @@ class AuthTestSpotipy(unittest.TestCase):
 
         self.assertTrue(len(playlists['items']) == 5)
 
+    @defer.inlineCallbacks
     def test_user_playlist_tracks(self):
-        playlists = spotify.user_playlists(username, limit=5)
+        playlists = yield spotify.user_playlists(username, limit=5)
         self.assertTrue('items' in playlists)
         for playlist in playlists['items']:
             user = playlist['owner']['id']
             pid = playlist['id']
-            results = spotify.user_playlist_tracks(user, pid)
+            results = yield spotify.user_playlist_tracks(user, pid)
             self.assertTrue(len(results['items']) > 0)
 
     def user_playlist_tracks(self, user, playlist_id = None, fields=None, 
@@ -82,79 +88,84 @@ class AuthTestSpotipy(unittest.TestCase):
 
         self.assertTrue(len(playlists['items']) == 5)
 
+    @defer.inlineCallbacks
     def test_current_user_saved_tracks(self):
-        tracks = spotify.current_user_saved_tracks()
+        tracks = yield spotify.current_user_saved_tracks()
         self.assertTrue(len(tracks['items']) > 0)
 
+    @defer.inlineCallbacks
     def test_current_user_save_and_unsave_tracks(self):
-        tracks = spotify.current_user_saved_tracks()
+        tracks = yield spotify.current_user_saved_tracks()
         total = tracks['total']
 
-        spotify.current_user_saved_tracks_add(self.four_tracks)
+        yield spotify.current_user_saved_tracks_add(self.four_tracks)
 
-        tracks = spotify.current_user_saved_tracks()
+        tracks = yield spotify.current_user_saved_tracks()
         new_total = tracks['total']
         self.assertTrue(new_total - total == len(self.four_tracks))
 
-        tracks = spotify.current_user_saved_tracks_delete(self.four_tracks)
-        tracks = spotify.current_user_saved_tracks()
+        tracks = yield spotify.current_user_saved_tracks_delete(self.four_tracks)
+        tracks = yield spotify.current_user_saved_tracks()
         new_total = tracks['total']
         self.assertTrue(new_total == total)
 
-
+    @defer.inlineCallbacks
     def test_new_releases(self):
-        response = spotify.new_releases()
+        response = yield spotify.new_releases()
         self.assertTrue(len(response['albums']) > 0)
 
+    @defer.inlineCallbacks
     def test_featured_releases(self):
-        response = spotify.featured_playlists()
+        response = yield spotify.featured_playlists()
         self.assertTrue(len(response['playlists']) > 0)
 
+    @defer.inlineCallbacks
     def get_or_create_spotify_playlist(self, username, playlist_name):
-        playlists = spotify.user_playlists(username)
+        playlists = yield spotify.user_playlists(username)
         while playlists:
             for item in playlists['items']:
                 if item['name'] == playlist_name:
-                    return item['id']
-            playlists = spotify.next(playlists)
-        playlist = spotify.user_playlist_create(username, playlist_name)
+                    defer.returnValue(item['id'])
+            playlists = yield spotify.next(playlists)
+        playlist = yield spotify.user_playlist_create(username, playlist_name)
         playlist_id = playlist['uri']
-        return playlist_id
+        defer.returnValue(playlist_id)
 
+    @defer.inlineCallbacks
     def test_user_playlist_ops(self):
         # create empty playlist
-        playlist_id = self.get_or_create_spotify_playlist(username, 
+        playlist_id = yield self.get_or_create_spotify_playlist(username,
                 'spotipy-testing-playlist-1')
 
         # remove all tracks from it
 
-        spotify.user_playlist_replace_tracks(username, playlist_id,[])
+        yield spotify.user_playlist_replace_tracks(username, playlist_id,[])
 
-        playlist = spotify.user_playlist(username, playlist_id)
+        playlist = yield spotify.user_playlist(username, playlist_id)
         self.assertTrue(playlist['tracks']['total'] == 0)
         self.assertTrue(len(playlist['tracks']['items']) == 0)
 
         # add tracks to it
 
-        spotify.user_playlist_add_tracks(username, playlist_id, self.four_tracks)
-        playlist = spotify.user_playlist(username, playlist_id)
+        yield spotify.user_playlist_add_tracks(username, playlist_id, self.four_tracks)
+        playlist = yield spotify.user_playlist(username, playlist_id)
         self.assertTrue(playlist['tracks']['total'] == 4)
         self.assertTrue(len(playlist['tracks']['items']) == 4)
 
         # remove two tracks from it
 
-        spotify.user_playlist_remove_all_occurrences_of_tracks (username, 
+        yield spotify.user_playlist_remove_all_occurrences_of_tracks (username,
                     playlist_id, self.two_tracks)
 
-        playlist = spotify.user_playlist(username, playlist_id)
+        playlist = yield spotify.user_playlist(username, playlist_id)
         self.assertTrue(playlist['tracks']['total'] == 2)
         self.assertTrue(len(playlist['tracks']['items']) == 2)
 
         # replace with 3 other tracks
-        spotify.user_playlist_replace_tracks(username, 
+        yield spotify.user_playlist_replace_tracks(username,
             playlist_id, self.other_tracks)
 
-        playlist = spotify.user_playlist(username, playlist_id)
+        playlist = yield spotify.user_playlist(username, playlist_id)
         self.assertTrue(playlist['tracks']['total'] == 3)
         self.assertTrue(len(playlist['tracks']['items']) == 3)
 
@@ -170,8 +181,13 @@ if __name__ == '__main__':
         scope += 'user-read-private'
 
         token = util.prompt_for_user_token(username, scope)
-        spotify = spotipy.Spotify(auth=token)
+        spotify = spotipy_twisted.Spotify(auth=token)
         spotify.trace = False
-        unittest.main()
+
+        import sys
+        from twisted.scripts import trial
+
+        sys.argv.extend([__name__])
+        trial.run()
     else:
         print "Usage: %s username" % (sys.argv[0],)

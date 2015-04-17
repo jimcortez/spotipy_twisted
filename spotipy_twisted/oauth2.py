@@ -1,11 +1,12 @@
 from __future__ import print_function
 import base64
 import urllib
-import requests
 import os
 import json
 import time
 import sys
+from twisted.internet import defer
+from txrequests import Session
 
 
 class SpotifyOauthError(Exception):
@@ -50,19 +51,23 @@ class SpotifyClientCredentials(object):
         self.token_info = token_info
         return self.token_info['access_token']
 
+    @defer.inlineCallbacks
     def _request_access_token(self):
         """Gets client credentials access token """
-        payload = { 'grant_type': 'client_credentials'}
+        payload = {'grant_type': 'client_credentials'}
 
         auth_header = base64.b64encode(self.client_id + ':' + self.client_secret)
         headers = {'Authorization': 'Basic %s' % auth_header}
 
-        response = requests.post(self.OAUTH_TOKEN_URL, data=payload,
-            headers=headers, verify=True)
-        if response.status_code is not 200:
-            raise SpotifyOauthError(response.reason)
-        token_info = response.json()
-        return token_info
+        with Session() as session:
+            d = session.post(self.OAUTH_TOKEN_URL, data=payload,
+                             headers=headers, verify=True)
+
+            response = yield d
+            if response.status_code is not 200:
+                defer.fail(SpotifyOauthError(response.reason))
+            token_info = response.json()
+            defer.returnValue(token_info)
 
     def _is_token_expired(self, token_info):
         now = int(time.time())
@@ -86,7 +91,7 @@ class SpotifyOAuth(object):
     OAUTH_TOKEN_URL = 'https://accounts.spotify.com/api/token'
 
     def __init__(self, client_id, client_secret, redirect_uri,
-            state=None, scope=None, cache_path=None):
+                 state=None, scope=None, cache_path=None):
         '''
             Creates a SpotifyOAuth object
 
@@ -102,9 +107,9 @@ class SpotifyOAuth(object):
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
-        self.state=state
+        self.state = state
         self.cache_path = cache_path
-        self.scope=self._normalize_scope(scope)
+        self.scope = self._normalize_scope(scope)
 
     def get_cached_token(self):
         ''' Gets a cached auth token
@@ -170,6 +175,7 @@ class SpotifyOAuth(object):
         except IndexError:
             return None
 
+    @defer.inlineCallbacks
     def get_access_token(self, code):
         """ Gets the access token for the app given the code
 
@@ -188,15 +194,16 @@ class SpotifyOAuth(object):
         auth_header = base64.b64encode(self.client_id + ':' + self.client_secret)
         headers = {'Authorization': 'Basic %s' % auth_header}
 
-
-        response = requests.post(self.OAUTH_TOKEN_URL, data=payload,
-            headers=headers, verify=True)
-        if response.status_code is not 200:
-            raise SpotifyOauthError(response.reason)
-        token_info = response.json()
-        token_info = self._add_custom_values_to_token_info(token_info)
-        self._save_token_info(token_info)
-        return token_info
+        with Session() as session:
+            d = session.post(self.OAUTH_TOKEN_URL, data=payload,
+                                     headers=headers, verify=True)
+            response = yield d
+            if response.status_code is not 200:
+                raise SpotifyOauthError(response.reason)
+            token_info = response.json()
+            token_info = self._add_custom_values_to_token_info(token_info)
+            self._save_token_info(token_info)
+            defer.returnValue(token_info)
 
     def _normalize_scope(self, scope):
         if scope:
@@ -207,27 +214,29 @@ class SpotifyOAuth(object):
             return None
 
     def _refresh_access_token(self, refresh_token):
-        payload = { 'refresh_token': refresh_token,
+        payload = {'refresh_token': refresh_token,
                    'grant_type': 'refresh_token'}
 
         auth_header = base64.b64encode(self.client_id + ':' + self.client_secret)
         headers = {'Authorization': 'Basic %s' % auth_header}
 
-        response = requests.post(self.OAUTH_TOKEN_URL, data=payload,
-            headers=headers)
-        if response.status_code != 200:
-            if False:  # debugging code
-                print('headers', headers)
-                print('request', response.url)
-            self._warn("couldn't refresh token: code:%d reason:%s" \
-                % (response.status_code, response.reason))
-            return None
-        token_info = response.json()
-        token_info = self._add_custom_values_to_token_info(token_info)
-        if not 'refresh_token' in token_info:
-            token_info['refresh_token'] = refresh_token
-        self._save_token_info(token_info)
-        return token_info
+        with Session() as session:
+            d = session.post(self.OAUTH_TOKEN_URL, data=payload,
+                                     headers=headers)
+            response = yield d
+            if response.status_code != 200:
+                if False:  # debugging code
+                    print('headers', headers)
+                    print('request', response.url)
+                self._warn("couldn't refresh token: code:%d reason:%s" \
+                           % (response.status_code, response.reason))
+                defer.returnValue(None)
+            token_info = response.json()
+            token_info = self._add_custom_values_to_token_info(token_info)
+            if not 'refresh_token' in token_info:
+                token_info['refresh_token'] = refresh_token
+            self._save_token_info(token_info)
+            defer.returnValue(token_info)
 
     def _add_custom_values_to_token_info(self, token_info):
         '''

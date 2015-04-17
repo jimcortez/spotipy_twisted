@@ -1,10 +1,10 @@
 
-import spotipy
+import spotipy_twisted
 
 
 lz_uri = 'spotify:artist:36QJpDe2go2KgaRleHCDTp'
 
-spotify = spotipy.Spotify()
+spotify = spotipy_twisted.Spotify()
 
 results = spotify.artist_top_tracks(lz_uri)
 

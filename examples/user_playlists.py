@@ -5,9 +5,9 @@ import sys
 import os
 import subprocess
 
-import spotipy
+import spotipy_twisted
 
-import spotipy.util as util
+import spotipy_twisted.util as util
 
 
 if len(sys.argv) > 1:
@@ -20,7 +20,7 @@ else:
 token = util.prompt_for_user_token(username)
 
 if token:
-    sp = spotipy.Spotify(auth=token)
+    sp = spotipy_twisted.Spotify(auth=token)
     playlists = sp.user_playlists(username)
     for playlist in playlists['items']:
         print playlist['name']

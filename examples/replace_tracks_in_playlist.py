@@ -4,8 +4,8 @@
 import pprint
 import sys
 
-import spotipy
-import spotipy.util as util
+import spotipy_twisted
+import spotipy_twisted.util as util
 
 if len(sys.argv) > 3:
     username = sys.argv[1]
@@ -19,7 +19,7 @@ scope = 'playlist-modify-public'
 token = util.prompt_for_user_token(username, scope)
 
 if token:
-    sp = spotipy.Spotify(auth=token)
+    sp = spotipy_twisted.Spotify(auth=token)
     sp.trace = False
     results = sp.user_playlist_replace_tracks(username, playlist_id, track_ids)
     pprint.pprint(results)

@@ -1,8 +1,8 @@
 import pprint
 import sys
 
-import spotipy
-import spotipy.util as util
+import spotipy_twisted
+import spotipy_twisted.util as util
 
 scope = 'user-library-read'
 
@@ -16,7 +16,7 @@ else:
 token = util.prompt_for_user_token(username, scope)
 
 if token:
-    sp = spotipy.Spotify(auth=token)
+    sp = spotipy_twisted.Spotify(auth=token)
     sp.trace = False
     results = sp.current_user_saved_tracks_contains(tracks=tids)
     pprint.pprint(results)

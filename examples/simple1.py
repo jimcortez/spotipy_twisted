@@ -1,9 +1,9 @@
-import spotipy
+import spotipy_twisted
 
 
 birdy_uri = 'spotify:artist:2WX2uTcsvV5OnS0inACecP'
 
-spotify = spotipy.Spotify()
+spotify = spotipy_twisted.Spotify()
 
 results = spotify.artist_albums(birdy_uri, album_type='album')
 albums = results['items']

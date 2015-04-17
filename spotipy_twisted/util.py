@@ -4,7 +4,7 @@
 import os
 import subprocess
 import oauth2
-import spotipy
+import spotipy_twisted
 
 def prompt_for_user_token(username, scope=None, client_id = None,
         client_secret = None, redirect_uri = None):
@@ -43,7 +43,7 @@ def prompt_for_user_token(username, scope=None, client_id = None,
             Get your credentials at     
                 https://developer.spotify.com/my-applications
         '''
-        raise spotipy.SpotifyException(550, -1, 'no credentials set')
+        raise spotipy_twisted.SpotifyException(550, -1, 'no credentials set')
 
     sp_oauth = oauth2.SpotifyOAuth(client_id, client_secret, redirect_uri, 
         scope=scope, cache_path=".cache-" + username )

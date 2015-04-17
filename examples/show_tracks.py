@@ -4,7 +4,7 @@
     given a list of track IDs show the artist and track name
 '''
 import sys
-import spotipy
+import spotipy_twisted
 
 if __name__ == '__main__':
     max_tracks_per_call = 50
@@ -14,7 +14,7 @@ if __name__ == '__main__':
         file = sys.stdin
     tids = file.read().split()
 
-    sp = spotipy.Spotify()
+    sp = spotipy_twisted.Spotify()
     for start in xrange(0, len(tids), max_tracks_per_call):
         results = sp.tracks(tids[start: start + max_tracks_per_call])
         for track in results['tracks']:

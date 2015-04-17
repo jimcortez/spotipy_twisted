@@ -1,12 +1,11 @@
 # -*- coding: latin-1 -*-
-import spotipy
-import unittest
-import pprint
-from spotipy.client import SpotifyException
+import spotipy_twisted
+from twisted.trial import unittest
+from spotipy_twisted.client import SpotifyException
+from twisted.internet import defer
 
 
 class TestSpotipy(unittest.TestCase):
-
     creep_urn = 'spotify:track:3HfB5hBU0dmBt8T0iCmH42'
     creep_id = '3HfB5hBU0dmBt8T0iCmH42'
     creep_url = 'http://open.spotify.com/track/3HfB5hBU0dmBt8T0iCmH42'
@@ -19,54 +18,65 @@ class TestSpotipy(unittest.TestCase):
     bad_id = 'BAD_ID'
 
     def setUp(self):
-        self.spotify = spotipy.Spotify()
+        self.spotify = spotipy_twisted.Spotify()
 
+    @defer.inlineCallbacks
     def test_artist_urn(self):
-        artist = self.spotify.artist(self.radiohead_urn)
-        self.assertTrue(artist['name'] == u'Radiohead')
+        artist = yield self.spotify.artist(self.radiohead_urn)
+        defer.returnValue(self.assertTrue(artist['name'] == u'Radiohead'))
 
+    @defer.inlineCallbacks
     def test_artists(self):
-        results = self.spotify.artists([self.weezer_urn, self.radiohead_urn])
+        results = yield self.spotify.artists([self.weezer_urn, self.radiohead_urn])
         self.assertTrue('artists' in results)
         self.assertTrue(len(results['artists']) == 2)
 
+    @defer.inlineCallbacks
     def test_album_urn(self):
-        album = self.spotify.album(self.pinkerton_urn)
+        album = yield self.spotify.album(self.pinkerton_urn)
         self.assertTrue(album['name'] == u'Pinkerton')
 
+    @defer.inlineCallbacks
     def test_album_tracks(self):
-        results = self.spotify.album_tracks(self.pinkerton_urn)
+        results = yield self.spotify.album_tracks(self.pinkerton_urn)
         self.assertTrue(len(results['items']) == 10)
 
+    @defer.inlineCallbacks
     def test_albums(self):
-        results = self.spotify.albums([self.pinkerton_urn, self.pablo_honey_urn])
+        results = yield self.spotify.albums([self.pinkerton_urn, self.pablo_honey_urn])
         self.assertTrue('albums' in results)
         self.assertTrue(len(results['albums']) == 2)
 
+    @defer.inlineCallbacks
     def test_track_urn(self):
-        track = self.spotify.track(self.creep_urn)
+        track = yield self.spotify.track(self.creep_urn)
         self.assertTrue(track['name'] == u'Creep')
 
+    @defer.inlineCallbacks
     def test_track_id(self):
-        track = self.spotify.track(self.creep_id)
+        track = yield self.spotify.track(self.creep_id)
         self.assertTrue(track['name'] == u'Creep')
 
+    @defer.inlineCallbacks
     def test_track_url(self):
-        track = self.spotify.track(self.creep_url)
+        track = yield self.spotify.track(self.creep_url)
         self.assertTrue(track['name'] == u'Creep')
 
+    @defer.inlineCallbacks
     def test_tracks(self):
-        results = self.spotify.tracks([self.creep_url, self.el_scorcho_urn])
+        results = yield self.spotify.tracks([self.creep_url, self.el_scorcho_urn])
         self.assertTrue('tracks' in results)
         self.assertTrue(len(results['tracks']) == 2)
 
+    @defer.inlineCallbacks
     def test_artist_top_tracks(self):
-        results = self.spotify.artist_top_tracks(self.weezer_urn)
+        results = yield self.spotify.artist_top_tracks(self.weezer_urn)
         self.assertTrue('tracks' in results)
         self.assertTrue(len(results['tracks']) == 10)
 
+    @defer.inlineCallbacks
     def test_artist_related_artists(self):
-        results = self.spotify.artist_related_artists(self.weezer_urn)
+        results = yield self.spotify.artist_related_artists(self.weezer_urn)
         self.assertTrue('artists' in results)
         self.assertTrue(len(results['artists']) == 20)
         for artist in results['artists']:
@@ -74,14 +84,16 @@ class TestSpotipy(unittest.TestCase):
                 found = True
         self.assertTrue(found)
 
+    @defer.inlineCallbacks
     def test_artist_search(self):
-        results = self.spotify.search(q='weezer', type='artist')
+        results = yield self.spotify.search(q='weezer', type='artist')
         self.assertTrue('artists' in results)
         self.assertTrue(len(results['artists']['items']) > 0)
         self.assertTrue(results['artists']['items'][0]['name'] == 'Weezer')
 
+    @defer.inlineCallbacks
     def test_artist_albums(self):
-        results = self.spotify.artist_albums(self.weezer_urn)
+        results = yield self.spotify.artist_albums(self.weezer_urn)
         self.assertTrue('items' in results)
         self.assertTrue(len(results['items']) > 0)
 
@@ -92,47 +104,49 @@ class TestSpotipy(unittest.TestCase):
 
         self.assertTrue(found)
 
+    @defer.inlineCallbacks
     def test_album_search(self):
-        results = self.spotify.search(q='weezer pinkerton', type='album')
+        results = yield self.spotify.search(q='weezer pinkerton', type='album')
         self.assertTrue('albums' in results)
         self.assertTrue(len(results['albums']['items']) > 0)
         self.assertTrue(results['albums']['items'][0]['name'].find('Pinkerton') >= 0)
 
+    @defer.inlineCallbacks
     def test_track_search(self):
-        results = self.spotify.search(q='el scorcho weezer', type='track')
+        results = yield self.spotify.search(q='el scorcho weezer', type='track')
         self.assertTrue('tracks' in results)
         self.assertTrue(len(results['tracks']['items']) > 0)
         self.assertTrue(results['tracks']['items'][0]['name'] == 'El Scorcho')
 
+    @defer.inlineCallbacks
     def test_user(self):
-        user = self.spotify.user(user='plamere')
+        user = yield self.spotify.user(user='plamere')
         self.assertTrue(user['uri'] == 'spotify:user:plamere')
 
+    @defer.inlineCallbacks
     def test_track_bad_id(self):
         try:
-            track = self.spotify.track(self.bad_id)
+            track = yield self.spotify.track(self.bad_id)
             self.assertTrue(False)
-        except spotipy.SpotifyException:
+        except spotipy_twisted.SpotifyException:
             self.assertTrue(True)
 
+    @defer.inlineCallbacks
     def test_unauthenticated_post_fails(self):
+        spotify = spotipy_twisted.Spotify()
         with self.assertRaises(SpotifyException) as cm:
-            self.spotify.user_playlist_create("spotify", "Best hits of the 90s")
-        self.assertEqual(cm.exception.http_status, 401)
+            yield spotify.user_playlist_create("spotify", "Best hits of the 90s")
+        self.assertEqual(cm.exception.http_status, 403)
 
+    @defer.inlineCallbacks
     def test_custom_requests_session(self):
-        from requests import Session
-        sess = Session()
-        sess.headers["user-agent"] = "spotipy-test"
-        with_custom_session = spotipy.Spotify(requests_session=sess)
-        self.assertTrue(with_custom_session.user(user="akx")["uri"] == "spotify:user:akx")
+        from txrequests import Session
 
-    def test_force_no_requests_session(self):
-        from requests import Session
-        with_no_session = spotipy.Spotify(requests_session=False)
-        self.assertFalse(isinstance(with_no_session._session, Session))
-        self.assertTrue(with_no_session.user(user="akx")["uri"] == "spotify:user:akx")
-
+        with Session() as sess:
+            sess.headers["user-agent"] = "spotipy-test"
+            with_custom_session = spotipy_twisted.Spotify(requests_session=sess)
+            user = yield with_custom_session.user(user="akx")
+            self.assertTrue(user["uri"] == "spotify:user:akx")
 
 
 '''
@@ -143,4 +157,9 @@ class TestSpotipy(unittest.TestCase):
 '''
 
 if __name__ == '__main__':
-    unittest.main()
+    import sys
+    from twisted.scripts import trial
+
+    sys.argv.extend([__name__])
+    trial.run()
+

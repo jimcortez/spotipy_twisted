@@ -1,7 +1,7 @@
 
 # shows related artists for the given seed artist
 
-import spotipy
+import spotipy_twisted
 import sys
 import pprint
 
@@ -10,7 +10,7 @@ if len(sys.argv) > 1:
 else:
     artist_name = 'weezer'
 
-sp = spotipy.Spotify()
+sp = spotipy_twisted.Spotify()
 result = sp.search(q='artist:' + artist_name, type='artist')
 try:
     name = result['artists']['items'][0]['name']

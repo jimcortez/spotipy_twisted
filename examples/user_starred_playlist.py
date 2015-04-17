@@ -1,8 +1,8 @@
 # shows a user's starred playlist
 
 import sys
-import spotipy
-import spotipy.util as util
+import spotipy_twisted
+import spotipy_twisted.util as util
 
 
 
@@ -16,7 +16,7 @@ else:
 token = util.prompt_for_user_token(username)
 
 if token:
-    sp = spotipy.Spotify(auth=token)
+    sp = spotipy_twisted.Spotify(auth=token)
     results = sp.user_playlist(username)
     tracks = results['tracks']
     which = 1

@@ -1,7 +1,7 @@
 
 # shows artist info for a URN or URL
 
-import spotipy
+import spotipy_twisted
 import sys
 import pprint
 
@@ -11,7 +11,7 @@ else:
     urn = 'spotify:artist:3jOstUTkEu2JkjvRdBA5Gu'
 
 
-sp = spotipy.Spotify()
+sp = spotipy_twisted.Spotify()
 artist = sp.artist(urn)
 pprint.pprint(artist)
 

@@ -1,7 +1,7 @@
 
 # shows artist info for a URN or URL
 
-import spotipy
+import spotipy_twisted
 import sys
 import pprint
 
@@ -10,7 +10,7 @@ if len(sys.argv) > 1:
 else:
     username = 'plamere'
 
-sp = spotipy.Spotify()
+sp = spotipy_twisted.Spotify()
 sp.trace = True
 user = sp.user(username)
 pprint.pprint(user)

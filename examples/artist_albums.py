@@ -1,5 +1,5 @@
 import sys
-import spotipy
+import spotipy_twisted
 
 ''' shows the albums and tracks for a given artist.
 '''
@@ -28,7 +28,7 @@ def show_artist_albums(id):
             seen.add(name)
 
 if __name__ == '__main__':
-    sp = spotipy.Spotify()
+    sp = spotipy_twisted.Spotify()
 
     if len(sys.argv) < 2:
         print('Usage: {0} artist name'.format(sys.argv[0]))

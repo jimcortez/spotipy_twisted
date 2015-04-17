@@ -1,6 +1,9 @@
-# Spotipy - a Python client for The Spotify Web API
+# spotipy_twisted - a Python client for The Spotify Web API
 
 ## Description
+
+This is a forked package from https://github.com/plamere/spotipy.
+It uses tx requests to take advantage of twisted: https://github.com/tardyp/txrequests
 
 Spotipy is a thin client library for the Spotify Web API.
 
@@ -16,25 +19,25 @@ If you already have [Python](http://www.python.org/) on your system you can inst
 
 You can also install it using a popular package manager with 
 
-  `pip install spotipy`
+  `pip install spotipy_twisted`
 
 or
 
-  `easy_install spotipy`
+  `easy_install spotipy_twisted`
 
 
 ## Dependencies
 
-- [Requests](https://github.com/kennethreitz/requests) - spotipy requires the requests package to be installed
+- [txRequests](https://github.com/tardyp/txrequests) - spotipy requires the txrequests package to be installed
 
 
 ## Quick Start
 To get started, simply install spotipy, reate a Spotify object and call methods:
 
-    import spotipy
-    sp = spotipy.Spotify()
+    import spotipy_twisted
+    sp = spotipy_twisted.Spotify()
 
-    results = sp.search(q='weezer', limit=20)
+    results = yield sp.search(q='weezer', limit=20)
     for i, t in enumerate(results['tracks']['items']):
         print ' ', i, t['name']
 

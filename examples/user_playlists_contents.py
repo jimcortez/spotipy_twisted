@@ -2,8 +2,8 @@
 
 import sys
 import os
-import spotipy
-import spotipy.util as util
+import spotipy_twisted
+import spotipy_twisted.util as util
 
 def show_tracks(results):
     for i, item in enumerate(tracks['items']):
@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     if token:
         top = 40
-        sp = spotipy.Spotify(auth=token)
+        sp = spotipy_twisted.Spotify(auth=token)
         playlists = sp.user_playlists(username)
         for playlist in playlists['items']:
             if playlist['owner']['id'] == username:

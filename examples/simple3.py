@@ -1,7 +1,7 @@
-import spotipy
+import spotipy_twisted
 import sys
 
-spotify = spotipy.Spotify()
+spotify = spotipy_twisted.Spotify()
 
 if len(sys.argv) > 1:
     name = ' '.join(sys.argv[1:])

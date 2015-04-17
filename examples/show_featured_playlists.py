@@ -1,9 +1,9 @@
 # shows artist info for a URN or URL
 
-import spotipy
+import spotipy_twisted
 import sys
 import pprint
-import spotipy.util as util
+import spotipy_twisted.util as util
 
 if len(sys.argv) > 1:
     username = sys.argv[1]
@@ -15,7 +15,7 @@ else:
 token = util.prompt_for_user_token(username)
 
 if token:
-    sp = spotipy.Spotify(auth=token)
+    sp = spotipy_twisted.Spotify(auth=token)
 
     response = sp.featured_playlists()
     print response['message']
