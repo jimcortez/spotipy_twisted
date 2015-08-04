@@ -5,7 +5,9 @@ import os
 import json
 import time
 import sys
+import treq
 from twisted.internet import defer
+from twisted.web.http_headers import Headers
 from txrequests import Session
 
 
@@ -57,17 +59,16 @@ class SpotifyClientCredentials(object):
         payload = {'grant_type': 'client_credentials'}
 
         auth_header = base64.b64encode(self.client_id + ':' + self.client_secret)
-        headers = {'Authorization': 'Basic %s' % auth_header}
+        headers = {'Authorization': ['Basic %s' % auth_header]}
 
-        with Session() as session:
-            d = session.post(self.OAUTH_TOKEN_URL, data=payload,
-                             headers=headers, verify=True)
+        d = treq.post(self.OAUTH_TOKEN_URL, data=payload,
+                                         headers=Headers(headers))
 
-            response = yield d
-            if response.status_code is not 200:
-                defer.fail(SpotifyOauthError(response.reason))
-            token_info = response.json()
-            defer.returnValue(token_info)
+        response = yield d
+        if response.status_code is not 200:
+            defer.fail(SpotifyOauthError(response.reason))
+        token_info = response.json()
+        defer.returnValue(token_info)
 
     def _is_token_expired(self, token_info):
         now = int(time.time())
@@ -111,6 +112,7 @@ class SpotifyOAuth(object):
         self.cache_path = cache_path
         self.scope = self._normalize_scope(scope)
 
+    @defer.inlineCallbacks
     def get_cached_token(self):
         ''' Gets a cached auth token
         '''
@@ -124,14 +126,14 @@ class SpotifyOAuth(object):
 
                 # if scopes don't match, then bail
                 if 'scope' not in token_info or self.scope != token_info['scope']:
-                    return None
+                    defer.returnValue(None)
 
                 if self._is_token_expired(token_info):
-                    token_info = self._refresh_access_token(token_info['refresh_token'])
+                    token_info = yield self._refresh_access_token(token_info['refresh_token'])
 
             except IOError:
                 pass
-        return token_info
+        defer.returnValue(token_info)
 
     def _save_token_info(self, token_info):
         if self.cache_path:
@@ -192,18 +194,17 @@ class SpotifyOAuth(object):
             payload['state'] = self.state
 
         auth_header = base64.b64encode(self.client_id + ':' + self.client_secret)
-        headers = {'Authorization': 'Basic %s' % auth_header}
+        headers = {'Authorization': ['Basic %s' % auth_header]}
 
-        with Session() as session:
-            d = session.post(self.OAUTH_TOKEN_URL, data=payload,
-                                     headers=headers, verify=True)
-            response = yield d
-            if response.status_code is not 200:
-                raise SpotifyOauthError(response.reason)
-            token_info = response.json()
-            token_info = self._add_custom_values_to_token_info(token_info)
-            self._save_token_info(token_info)
-            defer.returnValue(token_info)
+        d = treq.post(self.OAUTH_TOKEN_URL, data=payload,
+                                 headers=Headers(headers))
+        response = yield d
+        if response.status_code is not 200:
+            raise SpotifyOauthError(response.reason)
+        token_info = response.json()
+        token_info = self._add_custom_values_to_token_info(token_info)
+        self._save_token_info(token_info)
+        defer.returnValue(token_info)
 
     def _normalize_scope(self, scope):
         if scope:
@@ -213,30 +214,30 @@ class SpotifyOAuth(object):
         else:
             return None
 
+    @defer.inlineCallbacks
     def _refresh_access_token(self, refresh_token):
         payload = {'refresh_token': refresh_token,
                    'grant_type': 'refresh_token'}
 
         auth_header = base64.b64encode(self.client_id + ':' + self.client_secret)
-        headers = {'Authorization': 'Basic %s' % auth_header}
+        headers = {'Authorization': ['Basic %s' % auth_header]}
 
-        with Session() as session:
-            d = session.post(self.OAUTH_TOKEN_URL, data=payload,
-                                     headers=headers)
-            response = yield d
-            if response.status_code != 200:
-                if False:  # debugging code
-                    print('headers', headers)
-                    print('request', response.url)
-                self._warn("couldn't refresh token: code:%d reason:%s" \
-                           % (response.status_code, response.reason))
-                defer.returnValue(None)
-            token_info = response.json()
-            token_info = self._add_custom_values_to_token_info(token_info)
-            if not 'refresh_token' in token_info:
-                token_info['refresh_token'] = refresh_token
-            self._save_token_info(token_info)
-            defer.returnValue(token_info)
+        d = treq.post(self.OAUTH_TOKEN_URL, data=payload,
+                                 headers=Headers(headers))
+        response = yield d
+        if response.code != 200:
+            if False:  # debugging code
+                print('headers', headers)
+                print('request', response.url)
+            self._warn("couldn't refresh token: code:%d reason:%s" \
+                       % (response.status_code, response.reason))
+            defer.returnValue(None)
+        token_info = yield response.json()
+        token_info = self._add_custom_values_to_token_info(token_info)
+        if not 'refresh_token' in token_info:
+            token_info['refresh_token'] = refresh_token
+        self._save_token_info(token_info)
+        defer.returnValue(token_info)
 
     def _add_custom_values_to_token_info(self, token_info):
         '''

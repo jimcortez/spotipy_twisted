@@ -6,8 +6,9 @@ import sys
 import base64
 import json
 import time
-from twisted.internet import defer
-from txrequests import Session
+import treq
+from twisted.internet import defer, reactor
+from twisted.web.http_headers import Headers
 
 ''' A simple and thin Python library for the Spotify Web API
 '''
@@ -52,10 +53,7 @@ class Spotify(object):
 
         :param auth: An authorization token (optional)
         :param requests_session:
-            A Requests session object or a truthy value to create one.
-            A falsy value disables sessions.
-            It should generally be a good idea to keep sessions enabled
-            for performance reasons (connection pooling).
+            Not available in spotipy-twisted
         :param client_credentials_manager:
             SpotifyClientCredentials object
 
@@ -64,18 +62,12 @@ class Spotify(object):
         self._auth = auth
         self.client_credentials_manager = client_credentials_manager
 
-        if isinstance(requests_session, Session):
-            self._session = requests_session
-        else:
-            self._session = Session()
-
-
     def _auth_headers(self):
         if self._auth:
-            return {'Authorization': 'Bearer {0}'.format(self._auth)}
+            return {'Authorization': ['Bearer {0}'.format(self._auth)]}
         elif self.client_credentials_manager:
             token = self.client_credentials_manager.get_access_token()
-            return {'Authorization': 'Bearer {0}'.format(token)}
+            return {'Authorization': ['Bearer {0}'.format(token)]}
         else:
             return {}
 
@@ -85,51 +77,40 @@ class Spotify(object):
         if not url.startswith('http'):
             url = self.prefix + url
         headers = self._auth_headers()
-        headers['Content-Type'] = 'application/json'
+        headers['Content-Type'] = ['application/json']
 
         if payload:
             args["data"] = json.dumps(payload)
 
-        r_d = self._session.request(method, url, headers=headers, **args)
+        # TODO: treq can't handle unicode urls :(
+        url = str(url)
+
+        print("requesting %s" % url)
+        r_d = treq.request(method, url, headers=Headers(headers), **args)
 
         r = yield r_d
 
+        response_json = yield r.json()
+
         if self.trace:  # pragma: no cover
             print()
-            print(method, r.url)
+            print(method, url)
             if payload:
                 print("DATA", json.dumps(payload))
 
-        try:
-            r.raise_for_status()
-        except:
-            raise SpotifyException(r.status_code,
-                                   -1, u'%s:\n %s' % (r.url, r.json()['error']['message']))
-        if len(r.text) > 0:
-            results = r.json()
-            if self.trace:  # pragma: no cover
-                print('RESP', results)
-                print()
-            defer.returnValue(results)
-        else:
-            defer.returnValue(None)
+        if r.code != 200:
+            raise SpotifyException(r.code,
+                                   -1, u'%s:\n %s' % (url, response_json['error']['message']))
+
+        if self.trace:  # pragma: no cover
+            print('RESP', response_json)
+            print()
+        defer.returnValue(response_json)
 
     def _get(self, url, args=None, payload=None, **kwargs):
         if args:
             kwargs.update(args)
-        retries = self.max_get_retries
-        while retries > 0:
-            try:
-                return self._internal_call('GET', url, payload, kwargs)
-            except SpotifyException as e:
-                if e.http_status >= 500 and e.http_status < 600:
-                    retries -= 1
-                    if retries < 0:
-                        raise
-                    else:
-                        time.sleep(1)
-                else:
-                    raise
+        return self._internal_call('GET', url, payload, kwargs)
 
     def _post(self, url, args=None, payload=None, **kwargs):
         if args:
@@ -200,7 +181,6 @@ class Spotify(object):
 
         trid = self._get_id('artist', artist_id)
         return self._get('artists/' + trid)
-
 
     def artists(self, artists):
         ''' returns a list of artists given the artist IDs, URIs, or URLs
@@ -488,7 +468,6 @@ class Spotify(object):
         tlist = [self._get_id('track', t) for t in tracks]
         return self._get('me/tracks/contains?ids=' + ','.join(tlist))
 
-
     def current_user_saved_tracks_add(self, tracks=[]):
         ''' Add one or more tracks to the current user's 
             "Your Music" library.
@@ -498,7 +477,6 @@ class Spotify(object):
         '''
         tlist = [self._get_id('track', t) for t in tracks]
         return self._put('me/tracks/?ids=' + ','.join(tlist))
-
 
     def featured_playlists(self, locale=None, country=None,
                            timestamp=None, limit=20, offset=0):

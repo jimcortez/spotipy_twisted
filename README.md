@@ -5,7 +5,7 @@
 ## Description
 
 This is a forked package from https://github.com/plamere/spotipy (Version 2.3.3)
-It uses tx requests to take advantage of twisted: https://github.com/tardyp/txrequests
+It uses treq to take advantage of twisted: https://github.com/twisted/treq
 
 Spotipy is a thin client library for the Spotify Web API.
 
@@ -34,7 +34,7 @@ or
 
 ## Dependencies
 
-- [txRequests](https://github.com/tardyp/txrequests) - spotipy requires the txrequests package to be installed
+- [treq](https://github.com/twisted/treq) - spotipy requires the treq package to be installed
 
 
 ## Quick Start

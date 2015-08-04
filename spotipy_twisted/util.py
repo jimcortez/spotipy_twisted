@@ -5,7 +5,10 @@ import os
 import subprocess
 import oauth2
 import spotipy_twisted
+from twisted.internet import defer
 
+
+@defer.inlineCallbacks
 def prompt_for_user_token(username, scope=None, client_id = None,
         client_secret = None, redirect_uri = None):
     ''' prompts the user to login if necessary and returns
@@ -52,7 +55,7 @@ def prompt_for_user_token(username, scope=None, client_id = None,
     # if not in the cache, the create a new (this will send
     # the user to a web page where they can authorize this app)
 
-    token_info = sp_oauth.get_cached_token()
+    token_info = yield sp_oauth.get_cached_token()
 
     if not token_info:
         print '''
@@ -78,9 +81,9 @@ def prompt_for_user_token(username, scope=None, client_id = None,
         print 
 
         code = sp_oauth.parse_response_code(response)
-        token_info = sp_oauth.get_access_token(code)
+        token_info = yield sp_oauth.get_access_token(code)
     # Auth'ed API request
     if token_info:
-        return token_info['access_token']
+        defer.returnValue(token_info['access_token'])
     else:
-        return None
+        defer.returnValue(None)
