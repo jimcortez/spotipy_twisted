@@ -7,6 +7,6 @@ setup(
     author="@jecortez",
     author_email="jecortez@helloivee.com",
     url='http://spotipy.readthedocs.org/',
-    install_requires=['txrequests'],
+    install_requires=['treq'],
     license='LICENSE.txt',
     packages=['spotipy_twisted'])
